@@ -1,0 +1,36 @@
+# Environment and configuration files
+.env
+appSettings.json
+appSettings.*.json
+
+# Build and runtime files
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.pyc
+*.class
+
+# Logs
+*.log
+logs/
+
+# User-specific settings
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Dependencies
+node_modules/
+packages/
+wwwroot/lib/
+
+# System files
+.DS_Store
+Thumbs.db
