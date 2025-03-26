@@ -14,7 +14,6 @@ namespace PowerSync.Infrastructure.Configuration
         public string? DatabaseType { get; set; }
         public string? DatabaseUri { get; set; }
 
-        // Validation method
         public bool ValidateConfiguration()
         {
             return !string.IsNullOrWhiteSpace(JwtIssuer) &&

@@ -1,5 +1,3 @@
-using PowerSync.Domain.Interfaces;
-
 namespace PowerSync.Domain.Interfaces
 {
     /// <summary>

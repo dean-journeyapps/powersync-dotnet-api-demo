@@ -19,7 +19,6 @@ obj/
 logs/
 
 # User-specific settings
-.vscode/
 .idea/
 *.suo
 *.user

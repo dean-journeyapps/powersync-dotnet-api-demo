@@ -1,7 +1,4 @@
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using PowerSync.Domain.Interfaces;
@@ -37,6 +34,10 @@ builder.Services.Configure<PowerSyncConfig>(builder.Configuration.GetSection(Pow
 builder.Services.AddSingleton<NpgsqlConnection>(provider =>
 {
     var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
+    if (config.ValidateConfiguration())
+    {
+        throw new InvalidOperationException("PowerSync configuration is invalid.");
+    }
     var connectionString = config.DatabaseUri;
 
     if (string.IsNullOrEmpty(connectionString))
@@ -53,15 +54,21 @@ builder.Services.AddSingleton<PersisterFactoryRegistry>();
 builder.Services.AddSingleton<IPersisterFactory>(provider =>
 {
     var registry = provider.GetRequiredService<PersisterFactoryRegistry>();
-    //var config = provider.GetRequiredService<PowerSyncConfig>();
     var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
+    if (config.ValidateConfiguration())
+    {
+        throw new InvalidOperationException("PowerSync configuration is invalid.");
+    }
     return registry.GetFactory(config.DatabaseType!);
 });
 builder.Services.AddSingleton<IPersister>(provider =>
 {
     var factory = provider.GetRequiredService<IPersisterFactory>();
-    //var config = provider.GetRequiredService<PowerSyncConfig>();
     var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
+    if (config.ValidateConfiguration())
+    {
+        throw new InvalidOperationException("PowerSync configuration is invalid.");
+    }
     return factory.CreatePersisterAsync(config.DatabaseUri!).Result;
 });
 

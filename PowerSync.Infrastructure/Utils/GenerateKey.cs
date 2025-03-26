@@ -22,8 +22,8 @@ namespace PowerSync.Infrastructure.Utils
                 { "kty", "RSA" },
                 { "kid", kid },
                 { "alg", alg.ToString() },
-                { "n", Base64UrlEncode(publicKey.Modulus) },
-                { "e", Base64UrlEncode(publicKey.Exponent) }
+                { "n", Base64UrlEncode(publicKey.Modulus!) },
+                { "e", Base64UrlEncode(publicKey.Exponent!) }
             };
 
             // Export private key
@@ -33,7 +33,7 @@ namespace PowerSync.Infrastructure.Utils
                 { "kty", "RSA" },
                 { "kid", kid },
                 { "alg", alg.ToString() },
-                { "n", Base64UrlEncode(privateKey!.Modulus!) },
+                { "n", Base64UrlEncode(privateKey!.Modulus) },
                 { "e", Base64UrlEncode(privateKey.Exponent) },
                 { "d", Base64UrlEncode(privateKey.D) },
                 { "p", Base64UrlEncode(privateKey.P) },
