@@ -71,7 +71,8 @@ namespace PowerSync.Api.Controllers
             {
                 { "sub", user_id ?? "UserID" },
                 { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
-                { "iss", _config.JwtIssuer! },
+                //{ "iss", _config.JwtIssuer! },
+                {"iss", "powersync-dev"},
                 { "aud", _config.Url! },
                 { "exp", DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds() }
             };
