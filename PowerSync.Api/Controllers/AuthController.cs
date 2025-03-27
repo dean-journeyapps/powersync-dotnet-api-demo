@@ -2,28 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading.Tasks;
-using Jose;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PowerSync.Domain.Records;
+using Jose;
 using PowerSync.Infrastructure.Configuration;
-using PowerSync.Infrastructure.Utils;
 
 namespace PowerSync.Api.Controllers
 {
-    /// <summary>
-    /// Controller for handling PowerSync authentication
-    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly PowerSyncConfig _config;
         private readonly ILogger<AuthController> _logger;
-        private static string? _privateKey;
-        private static string? _publicKey;
+        private static RSAParameters? _privateKey;
+        private static RSAParameters? _publicKey;
         private static string? _kid;
 
         public AuthController(
@@ -34,49 +28,45 @@ namespace PowerSync.Api.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Ensures JWT keys are loaded
-        /// </summary>
-        private void EnsureKeysAsync()
+        private void EnsureKeys()
         {
-            // If keys are already loaded, return
-            if (_privateKey != null && _publicKey != null && _kid != null)
+            if (_privateKey.HasValue && _publicKey.HasValue && _kid != null)
                 return;
 
-            // Check if private key is in configuration
             if (string.IsNullOrEmpty(_config.PrivateKey))
             {
-                _logger.LogWarning("Private key not found in configuration. Generating temporary key pair.");
-
-                // Generate a temporary key pair
-                var (privateBase64, publicBase64, kid) = KeyPairGenerator.GenerateKeyPair();
-
-                _config.PrivateKey = privateBase64;
-                _config.PublicKey = publicBase64;
-                _kid = kid; 
+                _logger.LogWarning("Private key not found. Generating a temporary key pair.");
+                GenerateKeyPair();
             }
-
-            _privateKey = _config.PrivateKey;
-            _publicKey = _config.PublicKey;
-            _kid ??= Guid.NewGuid().ToString();
+            else
+            {
+                using var rsa = RSA.Create();
+                rsa.ImportRSAPrivateKey(Convert.FromBase64String(_config.PrivateKey), out _);
+                _privateKey = rsa.ExportParameters(true);
+                _publicKey = rsa.ExportParameters(false);
+                //_kid = _config.Kid ?? Guid.NewGuid().ToString();
+                _kid = Guid.NewGuid().ToString();
+            }
         }
 
-        /// <summary>
-        /// Generates a PowerSync authentication token
-        /// </summary>
+        private void GenerateKeyPair()
+        {
+            using var rsa = RSA.Create(2048);
+            _privateKey = rsa.ExportParameters(true);
+            _publicKey = rsa.ExportParameters(false);
+            _kid = $"powersync-{Guid.NewGuid():N}";
+        }
+
         [HttpGet("token")]
         public IActionResult GenerateToken([FromQuery] string? user_id)
         {
-            EnsureKeysAsync();
-
-            // Validate private key
-            if (_privateKey == null || _kid == null)
+            EnsureKeys();
+            if (!_privateKey.HasValue || _kid == null)
                 return BadRequest("Unable to generate token");
 
             using var rsa = RSA.Create();
-            rsa.ImportRSAPrivateKey(Convert.FromBase64String(_privateKey), out _);
+            rsa.ImportParameters(_privateKey.Value);
 
-            // Create payload
             var payload = new Dictionary<string, object>
             {
                 { "sub", user_id ?? "UserID" },
@@ -86,7 +76,6 @@ namespace PowerSync.Api.Controllers
                 { "exp", DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds() }
             };
 
-            // Create header with explicit algorithm and key ID
             var headers = new Dictionary<string, object>
             {
                 { "alg", "RS256" },
@@ -96,29 +85,27 @@ namespace PowerSync.Api.Controllers
 
             string token = JWT.Encode(payload, rsa, JwsAlgorithm.RS256, headers);
 
-            return Ok(new TokenResponse
-            {
-                Token = token,
-                PowersyncUrl = _config.Url
-            });
+            return Ok(new { token, powersync_url = _config.Url });
         }
 
-        /// <summary>
-        /// JWKS endpoint for PowerSync authentication
-        /// </summary>
         [HttpGet("keys")]
         public IActionResult GetKeys()
         {
-            EnsureKeysAsync();
-
-            // Validate public key
-            if (_publicKey == null)
+            EnsureKeys();
+            if (!_publicKey.HasValue)
                 return BadRequest("No public keys available");
 
-            return Ok(new
+            var rsaParams = _publicKey.Value;
+            var jwk = new
             {
-                keys = new[] { _publicKey }
-            });
+                kty = "RSA",
+                alg = "RS256",
+                kid = _kid,
+                n = Convert.ToBase64String(rsaParams.Modulus!),
+                e = Convert.ToBase64String(rsaParams.Exponent!)
+            };
+
+            return Ok(new { keys = new[] { jwk } });
         }
     }
 }
