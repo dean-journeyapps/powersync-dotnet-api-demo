@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,6 +25,7 @@ namespace PowerSync.Api.Controllers
         {
             _config = config.Value;
             _logger = logger;
+            EnsureKeys();
         }
 
         private void EnsureKeys()
@@ -33,50 +33,33 @@ namespace PowerSync.Api.Controllers
             if (_privateKey.HasValue && _publicKey.HasValue && _kid != null)
                 return;
 
-            if (string.IsNullOrEmpty(_config.PrivateKey))
-            {
-                _logger.LogWarning("Private key not found. Generating a temporary key pair.");
-                GenerateKeyPair();
-            }
-            else
-            {
-                using var rsa = RSA.Create();
-                rsa.ImportRSAPrivateKey(Convert.FromBase64String(_config.PrivateKey), out _);
-                _privateKey = rsa.ExportParameters(true);
-                _publicKey = rsa.ExportParameters(false);
-                //_kid = _config.Kid ?? Guid.NewGuid().ToString();
-                _kid = Guid.NewGuid().ToString();
-            }
-        }
-
-        private void GenerateKeyPair()
-        {
             using var rsa = RSA.Create(2048);
             _privateKey = rsa.ExportParameters(true);
             _publicKey = rsa.ExportParameters(false);
-            _kid = $"powersync-dev-3223d4e3-{Guid.NewGuid():N}";
+            _kid = $"powersync-{Guid.NewGuid():N}";
         }
 
         [HttpGet("token")]
         public IActionResult GenerateToken([FromQuery] string? user_id)
         {
-            EnsureKeys();
+            if (string.IsNullOrEmpty(user_id))
+                return BadRequest("User ID is required");
+
             if (!_privateKey.HasValue || _kid == null)
                 return BadRequest("Unable to generate token");
 
             using var rsa = RSA.Create();
             rsa.ImportParameters(_privateKey.Value);
 
-            // Explicitly define the audience
-            string audience = _config.Url ?? "https://67e2bdbeab2c5090c9c8269c.powersync.journeyapps.com";
+            string powerSyncInstanceUrl = _config.Url ?? throw new InvalidOperationException("PowerSync URL must be configured");
 
+            var now = DateTimeOffset.UtcNow;
             var payload = new Dictionary<string, object>
             {
-                { "sub", user_id ?? "UserID" },
-                { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
-                { "iss", "https://powersync-api.journeyapps.com" },
-                { "aud", audience },
-                { "exp", DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds() }
+                { "sub", user_id },
+                { "iat", now.ToUnixTimeSeconds() },
+                { "exp", now.AddMinutes(5).ToUnixTimeSeconds() }, 
+                { "aud", powerSyncInstanceUrl }
             };
 
             var headers = new Dictionary<string, object>
@@ -87,25 +70,16 @@ namespace PowerSync.Api.Controllers
 
             string token = JWT.Encode(payload, rsa, JwsAlgorithm.RS256, headers);
 
-            return Ok(new { token, powersync_url = audience });
+            return Ok(new { token, powersync_url = powerSyncInstanceUrl });
         }
 
         [HttpGet("keys")]
         public IActionResult GetKeys()
         {
-            EnsureKeys();
             if (!_publicKey.HasValue)
                 return BadRequest("No public keys available");
 
             var rsaParams = _publicKey.Value;
-            // var jwk = new
-            // {
-            //     kty = "RSA",
-            //     alg = "RS256",
-            //     kid = _kid,
-            //     n = Convert.ToBase64String(rsaParams.Modulus!),
-            //     e = Convert.ToBase64String(rsaParams.Exponent!)
-            // };
             var jwk = new
             {
                 kty = "RSA",
@@ -118,7 +92,7 @@ namespace PowerSync.Api.Controllers
             return Ok(new { keys = new[] { jwk } });
         }
 
-        string Base64UrlEncode(byte[] input) => Convert.ToBase64String(input)
+        private string Base64UrlEncode(byte[] input) => Convert.ToBase64String(input)
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');
