@@ -7,7 +7,7 @@ namespace PowerSync.Domain.Records
     /// </summary>
     public record BatchOperation
     {
-        public OperationType Op { get; init; }
+        public OperationType Op { get; set; }
         public string? Table { get; init; }
         public string? Id { get; init; }
         public Dictionary<string, object>? Data { get; init; }

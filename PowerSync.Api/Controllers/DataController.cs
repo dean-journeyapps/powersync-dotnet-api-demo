@@ -43,6 +43,7 @@ namespace PowerSync.Api.Controllers
 
             try
             {
+                batchOperation.Op = PowerSync.Domain.Enums.OperationType.PUT;
                 await _persister.UpdateBatchAsync([batchOperation]);
                 return Ok(new { message = $"PUT completed for {batchOperation.Table} {batchOperation.Data["id"]}" });
             }
@@ -78,6 +79,7 @@ namespace PowerSync.Api.Controllers
 
             try
             {
+                batchOperation.Op = PowerSync.Domain.Enums.OperationType.PATCH;
                 await _persister.UpdateBatchAsync([batchOperation]);
                 return Ok(new { message = $"PATCH completed for {batchOperation.Table}" });
             }
@@ -98,6 +100,7 @@ namespace PowerSync.Api.Controllers
 
             try
             {
+                batchOperation.Op = PowerSync.Domain.Enums.OperationType.DELETE;
                 await _persister.UpdateBatchAsync([batchOperation]);
                 return Ok(new { message = $"DELETE completed for {batchOperation.Table} {batchOperation.Id}" });
             }

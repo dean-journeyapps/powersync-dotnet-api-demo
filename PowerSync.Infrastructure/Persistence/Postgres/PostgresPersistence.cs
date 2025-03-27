@@ -78,18 +78,39 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             if (string.IsNullOrWhiteSpace(op.Id))
                 throw new ArgumentException("Id is required for PATCH operation");
 
-            var jsonData = JsonSerializer.Serialize(op.Data);
-            var sql = $@"
+            // Exclude 'id' from update columns
+            var updateColumns = op.Data
+                .Where(kvp => kvp.Key.ToLower() != "id")
+                .ToList();
+
+            // Create update clauses dynamically
+            var updateClauses = updateColumns
+                .Select(kvp => $"{kvp.Key} = data_row.{kvp.Key}")
+                .ToList();
+
+            // If no updatable columns, throw an exception
+            if (!updateClauses.Any())
+                throw new ArgumentException("No updatable columns provided");
+
+            // Prepare the data object with ID
+            var dataWithId = new Dictionary<string, object>(op.Data);
+            if (!dataWithId.ContainsKey("id"))
+            {
+                dataWithId["id"] = op.Id;
+            }
+
+            var statement = $@"
                 WITH data_row AS (
                     SELECT (json_populate_record(null::{op.Table}, @data::json)).*
                 )
                 UPDATE {op.Table}
-                SET {string.Join(", ", op.Data.Keys.Select(k => $"{k} = data_row.{k}"))}
+                SET {string.Join(", ", updateClauses)}
                 FROM data_row
                 WHERE {op.Table}.id = data_row.id";
 
-            await using var cmd = new NpgsqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@data", jsonData);
+            await using var cmd = new NpgsqlCommand(statement, connection);
+            cmd.Parameters.AddWithValue("@data", JsonSerializer.Serialize(dataWithId));
+
             await cmd.ExecuteNonQueryAsync();
         }
 

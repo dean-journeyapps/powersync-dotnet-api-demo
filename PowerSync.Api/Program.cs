@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using PowerSync.Domain.Interfaces;
@@ -6,6 +7,10 @@ using PowerSync.Infrastructure.Configuration;
 using PowerSync.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -21,57 +26,75 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Logging middleware
-builder.Services.AddLogging();
-
-// Bind the PowerSyncConfig from appsettings.json and environment variables
+// Add environment variables and configuration
 builder.Configuration.AddEnvironmentVariables();
 
+// Register PersisterFactoryRegistry first
+builder.Services.AddSingleton<PersisterFactoryRegistry>();
+
+// Configure PowerSync settings
 builder.Services.Configure<PowerSyncConfig>(builder.Configuration.GetSection(PowerSyncConfig.SectionName));
 
-
-// Add PowerSyncConfig as a singleton service
-builder.Services.AddSingleton<NpgsqlConnection>(provider =>
+// Validate and register configuration
+builder.Services.AddSingleton(provider =>
 {
     var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
-    if (config.ValidateConfiguration())
+    var logger = provider.GetRequiredService<ILogger<PowerSyncConfig>>();
+    
+    if (!config.ValidateConfiguration(out var validationErrors))
     {
-        throw new InvalidOperationException("PowerSync configuration is invalid.");
+        var errorMessage = $"PowerSync configuration is invalid: {string.Join(", ", validationErrors)}";
+        logger.LogError(errorMessage);
+        throw new InvalidOperationException(errorMessage);
     }
-    var connectionString = config.DatabaseUri;
-
-    if (string.IsNullOrEmpty(connectionString))
-    {
-        throw new InvalidOperationException("Database connection string is missing.");
-    }
-
-    // Set up connection to the Supabase PostgreSQL database
-    return new NpgsqlConnection(connectionString);
+    
+    return config;
 });
 
-// Register IPersisterFactory and IPersister
-builder.Services.AddSingleton<PersisterFactoryRegistry>();
+// Register database connection
+builder.Services.AddSingleton(provider =>
+{
+    var config = provider.GetRequiredService<PowerSyncConfig>();
+    return new NpgsqlConnection(config.DatabaseUri);
+});
+
+// Register IPersisterFactory
 builder.Services.AddSingleton<IPersisterFactory>(provider =>
 {
     var registry = provider.GetRequiredService<PersisterFactoryRegistry>();
-    var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
-    if (config.ValidateConfiguration())
+    var config = provider.GetRequiredService<PowerSyncConfig>();
+    var logger = provider.GetRequiredService<ILogger<IPersisterFactory>>();
+
+    try 
     {
-        throw new InvalidOperationException("PowerSync configuration is invalid.");
+        return registry.GetFactory(config.DatabaseType!);
     }
-    return registry.GetFactory(config.DatabaseType!);
+    catch (ArgumentException ex)
+    {
+        logger.LogError(ex, "Failed to get persister factory");
+        throw;
+    }
 });
+
+// Register IPersister
 builder.Services.AddSingleton<IPersister>(provider =>
 {
     var factory = provider.GetRequiredService<IPersisterFactory>();
-    var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
-    if (config.ValidateConfiguration())
+    var config = provider.GetRequiredService<PowerSyncConfig>();
+    var logger = provider.GetRequiredService<ILogger<IPersister>>();
+
+    try 
     {
-        throw new InvalidOperationException("PowerSync configuration is invalid.");
+        return factory.CreatePersisterAsync(config.DatabaseUri!).Result;
     }
-    return factory.CreatePersisterAsync(config.DatabaseUri!).Result;
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Failed to create persister");
+        throw;
+    }
 });
 
+// Configure JSON serialization
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -79,6 +102,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+// Build the application
 var app = builder.Build();
 
 // Middleware configuration
@@ -87,36 +111,37 @@ app.UseHttpsRedirection();
 // CORS middleware
 app.UseCors();
 
-// Configure the HTTP request pipeline.
+// Development-specific configuration
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
 }
 
-// Logging request middleware
+// Logging middleware
 app.Use(async (context, next) =>
 {
-    Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path}");
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path}");
     await next();
 });
 
 // Root route
-app.MapGet("/", () =>
+app.MapGet("/", () => Results.Ok(new
 {
-    return Results.Ok(new
-    {
-        message = "powersync-dotnet-backend-todolist-demo",
-    });
-});
+    message = "powersync-dotnet-backend-todolist-demo",
+}));
 
-// API routes will be added here
+// API routes
 app.MapControllers();
 
+// Global exception handling
 try
 {
     app.Run();
 }
-catch (Exception err)
+catch (Exception ex)
 {
-    Console.WriteLine($"Unexpected error: {err}");
+    // Use proper logging instead of Console.WriteLine
+    Console.WriteLine($"Critical error: {ex}");
 }

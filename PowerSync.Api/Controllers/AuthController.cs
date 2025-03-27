@@ -22,8 +22,6 @@ namespace PowerSync.Api.Controllers
     {
         private readonly PowerSyncConfig _config = config.Value;
         private readonly ILogger<AuthController> _logger = logger;
-
-        // Thread-safe key storage
         private static Dictionary<string, object>? _privateKey;
         private static Dictionary<string, object>? _publicKey;
 
