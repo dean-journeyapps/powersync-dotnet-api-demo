@@ -96,16 +96,29 @@ namespace PowerSync.Api.Controllers
                 return BadRequest("No public keys available");
 
             var rsaParams = _publicKey.Value;
+            // var jwk = new
+            // {
+            //     kty = "RSA",
+            //     alg = "RS256",
+            //     kid = _kid,
+            //     n = Convert.ToBase64String(rsaParams.Modulus!),
+            //     e = Convert.ToBase64String(rsaParams.Exponent!)
+            // };
             var jwk = new
             {
                 kty = "RSA",
                 alg = "RS256",
                 kid = _kid,
-                n = Convert.ToBase64String(rsaParams.Modulus!),
-                e = Convert.ToBase64String(rsaParams.Exponent!)
+                n = Base64UrlEncode(rsaParams.Modulus!),
+                e = Base64UrlEncode(rsaParams.Exponent!)
             };
 
             return Ok(new { keys = new[] { jwk } });
         }
+
+        string Base64UrlEncode(byte[] input) => Convert.ToBase64String(input)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
 }
