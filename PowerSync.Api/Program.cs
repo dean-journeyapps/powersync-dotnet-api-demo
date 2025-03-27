@@ -176,7 +176,8 @@ app.MapControllers();
 // Global exception handling
 try
 {
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    //var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    var port = "6060";
     app.Run($"http://0.0.0.0:{port}");
 }
 catch (Exception ex)
