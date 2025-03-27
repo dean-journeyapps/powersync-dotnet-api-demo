@@ -9,7 +9,7 @@ namespace PowerSync.Domain.Interfaces
         /// Creates a persister for a given connection URI.
         /// </summary>
         /// <param name="uri">The connection URI</param>
-        /// <returns>A task containing the created persister</returns>
-        Task<IPersister> CreatePersisterAsync(string uri);
+        /// <returns>The created persister</returns>
+        IPersister CreatePersisterAsync(string uri);
     }
 }

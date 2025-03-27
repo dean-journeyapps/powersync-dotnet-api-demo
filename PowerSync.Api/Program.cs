@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -32,6 +33,12 @@ builder.Configuration.AddEnvironmentVariables();
 // Register PersisterFactoryRegistry first
 builder.Services.AddSingleton<PersisterFactoryRegistry>();
 
+var envDatabaseUri = Environment.GetEnvironmentVariable("DATABASE_URI");
+if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+{
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:Database_Uri"] = envDatabaseUri;
+}
+
 // Configure PowerSync settings
 builder.Services.Configure<PowerSyncConfig>(builder.Configuration.GetSection(PowerSyncConfig.SectionName));
 
@@ -55,7 +62,7 @@ builder.Services.AddSingleton(provider =>
 builder.Services.AddSingleton(provider =>
 {
     var config = provider.GetRequiredService<PowerSyncConfig>();
-    return new NpgsqlConnection(config.DatabaseUri);
+    return new NpgsqlConnection(config.Database_Uri);
 });
 
 // Register IPersisterFactory
@@ -85,7 +92,7 @@ builder.Services.AddSingleton<IPersister>(provider =>
 
     try 
     {
-        return factory.CreatePersisterAsync(config.DatabaseUri!).Result;
+        return factory.CreatePersisterAsync(config.Database_Uri!);
     }
     catch (Exception ex)
     {
@@ -100,6 +107,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
     });
 
 // Build the application

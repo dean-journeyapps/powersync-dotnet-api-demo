@@ -12,7 +12,7 @@ namespace PowerSync.Infrastructure.Configuration
         public string? JwtIssuer { get; set; }
         public string? Url { get; set; }
         public string? DatabaseType { get; set; }
-        public string? DatabaseUri { get; set; }
+        public string? Database_Uri { get; set; }
 
         public bool ValidateConfiguration(out List<string> validationErrors)
         {
@@ -28,7 +28,7 @@ namespace PowerSync.Infrastructure.Configuration
             if (string.IsNullOrWhiteSpace(DatabaseType))
                 validationErrors.Add("Database Type is required");
 
-            if (string.IsNullOrWhiteSpace(DatabaseUri))
+            if (string.IsNullOrWhiteSpace(Database_Uri))
                 validationErrors.Add("Database URI is required");
 
             // Optional: Add more specific validations

@@ -42,7 +42,7 @@ namespace PowerSync.Infrastructure.Persistence
 
     public class MongoPersisterFactory : IPersisterFactory
     {
-        public Task<IPersister> CreatePersisterAsync(string uri)
+        public IPersister CreatePersisterAsync(string uri)
         {
             // Implement MongoDB persister creation
             throw new NotImplementedException();
@@ -51,18 +51,18 @@ namespace PowerSync.Infrastructure.Persistence
 
     public class PostgresPersisterFactory : IPersisterFactory
     {
-        public async Task<IPersister> CreatePersisterAsync(string uri)
+        public IPersister CreatePersisterAsync(string uri)
         {
             var persister = new PostgresPersister(uri);
 
             // Return the created persister
-            return await Task.FromResult(persister);
+            return persister;
         }
     }
 
     public class MySqlPersisterFactory : IPersisterFactory
     {
-        public Task<IPersister> CreatePersisterAsync(string uri)
+        public IPersister CreatePersisterAsync(string uri)
         {
             // Implement MySQL persister creation
             throw new NotImplementedException();
