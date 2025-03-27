@@ -80,7 +80,7 @@ namespace PowerSync.Api.Controllers
             var headers = new Dictionary<string, object>
             {
                 { "alg", "RS256" },
-                { "typ", "JWT" },
+                // { "typ", "JWT" },
                 { "kid", _kid }
             };
 
