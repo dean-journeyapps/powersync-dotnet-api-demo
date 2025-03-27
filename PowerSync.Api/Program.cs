@@ -77,14 +77,14 @@ builder.Services.AddSingleton(provider =>
 {
     var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
     var logger = provider.GetRequiredService<ILogger<PowerSyncConfig>>();
-    
+
     if (!config.ValidateConfiguration(out var validationErrors))
     {
         var errorMessage = $"PowerSync configuration is invalid: {string.Join(", ", validationErrors)}";
         logger.LogError(errorMessage);
         throw new InvalidOperationException(errorMessage);
     }
-    
+
     return config;
 });
 
@@ -102,7 +102,7 @@ builder.Services.AddSingleton<IPersisterFactory>(provider =>
     var config = provider.GetRequiredService<PowerSyncConfig>();
     var logger = provider.GetRequiredService<ILogger<IPersisterFactory>>();
 
-    try 
+    try
     {
         return registry.GetFactory(config.DatabaseType!);
     }
@@ -120,7 +120,7 @@ builder.Services.AddSingleton<IPersister>(provider =>
     var config = provider.GetRequiredService<PowerSyncConfig>();
     var logger = provider.GetRequiredService<ILogger<IPersister>>();
 
-    try 
+    try
     {
         return factory.CreatePersisterAsync(config.DatabaseUri!);
     }
@@ -176,7 +176,8 @@ app.MapControllers();
 // Global exception handling
 try
 {
-    app.Run();
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    app.Run($"http://0.0.0.0:{port}");
 }
 catch (Exception ex)
 {
