@@ -78,12 +78,12 @@ builder.Services.AddSingleton(provider =>
     var config = provider.GetRequiredService<IOptions<PowerSyncConfig>>().Value;
     var logger = provider.GetRequiredService<ILogger<PowerSyncConfig>>();
 
-    // if (!config.ValidateConfiguration(out var validationErrors))
-    // {
-    //     var errorMessage = $"PowerSync configuration is invalid: {string.Join(", ", validationErrors)}";
-    //     logger.LogError(errorMessage);
-    //     throw new InvalidOperationException(errorMessage);
-    // }
+    if (!config.ValidateConfiguration(out var validationErrors))
+    {
+        var errorMessage = $"PowerSync configuration is invalid: {string.Join(", ", validationErrors)}";
+        logger.LogError(errorMessage);
+        throw new InvalidOperationException(errorMessage);
+    }
 
     return config;
 });
