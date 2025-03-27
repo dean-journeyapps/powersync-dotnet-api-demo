@@ -54,7 +54,7 @@ namespace PowerSync.Api.Controllers
             using var rsa = RSA.Create(2048);
             _privateKey = rsa.ExportParameters(true);
             _publicKey = rsa.ExportParameters(false);
-            _kid = $"powersync-{Guid.NewGuid():N}";
+            _kid = $"powersync-dev-3223d4e3-{Guid.NewGuid():N}";
         }
 
         [HttpGet("token")]
@@ -67,26 +67,27 @@ namespace PowerSync.Api.Controllers
             using var rsa = RSA.Create();
             rsa.ImportParameters(_privateKey.Value);
 
+            // Explicitly define the audience
+            string audience = _config.Url ?? "https://67e2bdbeab2c5090c9c8269c.powersync.journeyapps.com";
+
             var payload = new Dictionary<string, object>
             {
                 { "sub", user_id ?? "UserID" },
                 { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
-                //{ "iss", _config.JwtIssuer! },
-                {"iss", "https://powersync-api.journeyapps.com"},
-                { "aud", _config.Url! },
+                { "iss", "https://powersync-api.journeyapps.com" },
+                { "aud", audience },
                 { "exp", DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds() }
             };
 
             var headers = new Dictionary<string, object>
             {
                 { "alg", "RS256" },
-                // { "typ", "JWT" },
                 { "kid", _kid }
             };
 
             string token = JWT.Encode(payload, rsa, JwsAlgorithm.RS256, headers);
 
-            return Ok(new { token, powersync_url = _config.Url });
+            return Ok(new { token, powersync_url = audience });
         }
 
         [HttpGet("keys")]
