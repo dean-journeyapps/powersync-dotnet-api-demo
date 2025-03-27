@@ -57,7 +57,7 @@ if (!string.IsNullOrWhiteSpace(envDatabaseUri))
     builder.Configuration[$"{PowerSyncConfig.SectionName}:PublicKey"] = envPublicKey;
 }
 
-var envJWTIssuer = Environment.GetEnvironmentVariable("POWERSYNC_JWTISSUER");
+var envJWTIssuer = Environment.GetEnvironmentVariable("JWTISSUER");
 if (!string.IsNullOrWhiteSpace(envDatabaseUri))
 {
     builder.Configuration[$"{PowerSyncConfig.SectionName}:JwtIssuer"] = envJWTIssuer;
