@@ -12,7 +12,7 @@ namespace PowerSync.Infrastructure.Configuration
         public string? JwtIssuer { get; set; }
         public string? Url { get; set; }
         public string? DatabaseType { get; set; }
-        public string? Database_Uri { get; set; }
+        public string? DatabaseUri { get; set; }
 
         public bool ValidateConfiguration(out List<string> validationErrors)
         {
@@ -28,15 +28,13 @@ namespace PowerSync.Infrastructure.Configuration
             if (string.IsNullOrWhiteSpace(DatabaseType))
                 validationErrors.Add("Database Type is required");
 
-            if (string.IsNullOrWhiteSpace(Database_Uri))
+            if (string.IsNullOrWhiteSpace(DatabaseUri))
                 validationErrors.Add("Database URI is required");
 
-            // Optional: Add more specific validations
             if (!string.IsNullOrWhiteSpace(Url) && !Uri.TryCreate(Url, UriKind.Absolute, out _))
                 validationErrors.Add("Invalid PowerSync URL format");
 
-            // Optional: Validate supported database types
-            var supportedDatabaseTypes = new[] { "postgres", "mysql", "sqlite" };
+            var supportedDatabaseTypes = new[] { "postgres", "mysql", "mongodb" };
             if (!string.IsNullOrWhiteSpace(DatabaseType) && 
                 !supportedDatabaseTypes.Contains(DatabaseType.ToLowerInvariant()))
                 validationErrors.Add($"Unsupported database type. Supported types are: {string.Join(", ", supportedDatabaseTypes)}");

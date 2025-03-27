@@ -50,10 +50,13 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             }
         }
 
-        private async Task HandlePutOperation(NpgsqlConnection connection, BatchOperation op)
+        private static async Task HandlePutOperation(NpgsqlConnection connection, BatchOperation op)
         {
             if (string.IsNullOrWhiteSpace(op.Table) || string.IsNullOrWhiteSpace(op.Id))
                 throw new ArgumentException("Table name and Id cannot be empty");
+
+            if (op.Data is null || op.Data.Count == 0)
+                throw new ArgumentException("Data is required for PUT operation");
 
             var dataDict = new Dictionary<string, object>(op.Data)
             {
@@ -73,14 +76,17 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             await cmd.ExecuteNonQueryAsync();
         }
 
-        private async Task HandlePatchOperation(NpgsqlConnection connection, BatchOperation op)
+        private static async Task HandlePatchOperation(NpgsqlConnection connection, BatchOperation op)
         {
             if (string.IsNullOrWhiteSpace(op.Id))
                 throw new ArgumentException("Id is required for PATCH operation");
 
+            if (op.Data is null || op.Data.Count == 0)
+                throw new ArgumentException("Data is required for PATCH operation");
+
             // Exclude 'id' from update columns
             var updateColumns = op.Data
-                .Where(kvp => kvp.Key.ToLower() != "id")
+                .Where(kvp => !kvp.Key.Equals("id", StringComparison.CurrentCultureIgnoreCase))
                 .ToList();
 
             // Create update clauses dynamically
@@ -114,7 +120,7 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             await cmd.ExecuteNonQueryAsync();
         }
 
-        private async Task HandleDeleteOperation(NpgsqlConnection connection, BatchOperation op)
+        private static async Task HandleDeleteOperation(NpgsqlConnection connection, BatchOperation op)
         {
             if (string.IsNullOrWhiteSpace(op.Id))
                 throw new ArgumentException("Id is required for DELETE operation");

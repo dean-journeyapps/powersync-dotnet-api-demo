@@ -36,7 +36,37 @@ builder.Services.AddSingleton<PersisterFactoryRegistry>();
 var envDatabaseUri = Environment.GetEnvironmentVariable("DATABASE_URI");
 if (!string.IsNullOrWhiteSpace(envDatabaseUri))
 {
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:Database_Uri"] = envDatabaseUri;
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:DatabaseUri"] = envDatabaseUri;
+}
+
+var envDatabaseType = Environment.GetEnvironmentVariable("DATABASE_TYPE");
+if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+{
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:DatabaseType"] = envDatabaseType;
+}
+
+var envPrivateKey = Environment.GetEnvironmentVariable("POWERSYNC_PRIVATEKEY");
+if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+{
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:PrivateKey"] = envPrivateKey;
+}
+
+var envPublicKey = Environment.GetEnvironmentVariable("POWERSYNC_PUBLICKEY");
+if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+{
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:PublicKey"] = envPublicKey;
+}
+
+var envJWTIssuer = Environment.GetEnvironmentVariable("POWERSYNC_JWTISSUER");
+if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+{
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:JwtIssuer"] = envJWTIssuer;
+}
+
+var envUrl = Environment.GetEnvironmentVariable("POWERSYNC_URL");
+if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+{
+    builder.Configuration[$"{PowerSyncConfig.SectionName}:Url"] = envUrl;
 }
 
 // Configure PowerSync settings
@@ -62,7 +92,7 @@ builder.Services.AddSingleton(provider =>
 builder.Services.AddSingleton(provider =>
 {
     var config = provider.GetRequiredService<PowerSyncConfig>();
-    return new NpgsqlConnection(config.Database_Uri);
+    return new NpgsqlConnection(config.DatabaseUri);
 });
 
 // Register IPersisterFactory
@@ -92,7 +122,7 @@ builder.Services.AddSingleton<IPersister>(provider =>
 
     try 
     {
-        return factory.CreatePersisterAsync(config.Database_Uri!);
+        return factory.CreatePersisterAsync(config.DatabaseUri!);
     }
     catch (Exception ex)
     {

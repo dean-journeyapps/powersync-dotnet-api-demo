@@ -24,7 +24,7 @@ namespace PowerSync.Api.Controllers
         private readonly ILogger<AuthController> _logger;
         private static string? _privateKey;
         private static string? _publicKey;
-        private static string? _kid; // Added key identifier
+        private static string? _kid;
 
         public AuthController(
             IOptions<PowerSyncConfig> config,
