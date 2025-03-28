@@ -10,7 +10,7 @@ namespace PowerSync.Infrastructure.Configuration
         public string? PrivateKey { get; set; }
         public string? PublicKey { get; set; }
         public string? JwtIssuer { get; set; }
-        public string? Url { get; set; }
+        public string? PowerSyncUrl { get; set; }
         public string? DatabaseType { get; set; }
         public string? DatabaseUri { get; set; }
 
@@ -22,7 +22,7 @@ namespace PowerSync.Infrastructure.Configuration
             if (string.IsNullOrWhiteSpace(JwtIssuer))
                 validationErrors.Add("JWT Issuer is required");
 
-            if (string.IsNullOrWhiteSpace(Url))
+            if (string.IsNullOrWhiteSpace(PowerSyncUrl))
                 validationErrors.Add("PowerSync URL is required");
 
             if (string.IsNullOrWhiteSpace(DatabaseType))

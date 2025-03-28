@@ -51,7 +51,7 @@ namespace PowerSync.Api.Controllers
             using var rsa = RSA.Create();
             rsa.ImportParameters(_privateKey.Value);
 
-            string powerSyncInstanceUrl = _config.Url ?? throw new InvalidOperationException("PowerSync URL must be configured");
+            string powerSyncInstanceUrl = _config.PowerSyncUrl?.TrimEnd('/') ?? throw new InvalidOperationException("PowerSync URL must be configured");
 
             var now = DateTimeOffset.UtcNow;
             var payload = new Dictionary<string, object>
@@ -70,6 +70,8 @@ namespace PowerSync.Api.Controllers
             };
 
             string token = JWT.Encode(payload, rsa, JwsAlgorithm.RS256, headers);
+
+            _logger.LogInformation($"Audience value: {powerSyncInstanceUrl}");
 
             return Ok(new { token, powersync_url = powerSyncInstanceUrl });
         }
