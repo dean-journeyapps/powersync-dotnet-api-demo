@@ -66,6 +66,7 @@ if (!string.IsNullOrWhiteSpace(envDatabaseUri))
 }
 
 var envUrl = Environment.GetEnvironmentVariable("POWERSYNC_URL");
+envUrl = "https://67e2bdbeab2c5090c9c8269c.powersync.journeyapps.com";
 if (!string.IsNullOrWhiteSpace(envDatabaseUri))
 {
     builder.Configuration[$"{PowerSyncConfig.SectionName}:Url"] = envUrl;
