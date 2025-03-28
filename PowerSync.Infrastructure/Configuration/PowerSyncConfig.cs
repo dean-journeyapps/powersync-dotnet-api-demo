@@ -31,8 +31,8 @@ namespace PowerSync.Infrastructure.Configuration
             if (string.IsNullOrWhiteSpace(DatabaseUri))
                 validationErrors.Add("Database URI is required");
 
-            if (!string.IsNullOrWhiteSpace(Url) && !Uri.TryCreate(Url, UriKind.Absolute, out _))
-                validationErrors.Add("Invalid PowerSync URL format");
+            // if (!string.IsNullOrWhiteSpace(Url) && !Uri.TryCreate(Url, UriKind.Absolute, out _))
+            //     validationErrors.Add("Invalid PowerSync URL format");
 
             var supportedDatabaseTypes = new[] { "postgres", "mysql", "mongodb" };
             if (!string.IsNullOrWhiteSpace(DatabaseType) && 
