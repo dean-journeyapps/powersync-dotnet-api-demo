@@ -19,12 +19,12 @@ builder.Services.AddControllers();
 // Add CORS services
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3030", "http://localhost:6060")
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials(); // Important for handling credentials
+              .AllowCredentials();
     });
 });
 
@@ -149,21 +149,73 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 
 // CORS middleware
-app.UseCors("AllowSpecificOrigin");
+app.UseCors("AllowAll");
 
 // Development-specific configuration
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.UseDeveloperExceptionPage();
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var exceptionHandlerPathFeature = 
+                context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+            
+            var exception = exceptionHandlerPathFeature.Error;
+            
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exception, "Unhandled exception");
+
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new 
+            {
+                error = "Internal Server Error",
+                message = exception.Message,
+                stackTrace = app.Environment.IsDevelopment() ? exception.StackTrace : null
+            }));
+        });
+    });
 }
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+        return;
+    }
+
+    await next();
+});
 
 // Logging middleware
 app.Use(async (context, next) =>
 {
     var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path}");
-    await next();
+    
+    // Log request details
+    logger.LogInformation($"Incoming Request: {context.Request.Method} {context.Request.Path}");
+    logger.LogInformation($"Origin: {context.Request.Headers["Origin"]}");
+    logger.LogInformation($"Referer: {context.Request.Headers["Referer"]}");
+
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        // Enhanced error logging
+        logger.LogError(ex, $"Unhandled exception processing request: {context.Request.Path}");
+        
+        context.Response.StatusCode = 500;
+        await context.Response.WriteAsync("An unexpected error occurred");
+    }
 });
 
 // Root route
