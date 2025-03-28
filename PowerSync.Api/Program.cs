@@ -19,13 +19,15 @@ builder.Services.AddControllers();
 // Add CORS services
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowSpecificOrigin", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3030", "http://localhost:6060")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Important for handling credentials
     });
 });
+
 
 // Add environment variables and configuration
 builder.Configuration.AddEnvironmentVariables();
@@ -147,7 +149,7 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 
 // CORS middleware
-app.UseCors();
+app.UseCors("AllowSpecificOrigin");
 
 // Development-specific configuration
 if (app.Environment.IsDevelopment())
