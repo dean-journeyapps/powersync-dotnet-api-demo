@@ -36,7 +36,7 @@ namespace PowerSync.Api.Controllers
             using var rsa = RSA.Create(2048);
             _privateKey = rsa.ExportParameters(true);
             _publicKey = rsa.ExportParameters(false);
-            _kid = $"powersync-{Guid.NewGuid():N}";
+            _kid = $"powersync-dev-{Guid.NewGuid():N}";
         }
 
         [HttpGet("token")]
@@ -59,7 +59,8 @@ namespace PowerSync.Api.Controllers
                 { "sub", user_id },
                 { "iat", now.ToUnixTimeSeconds() },
                 { "exp", now.AddMinutes(5).ToUnixTimeSeconds() }, 
-                { "aud", powerSyncInstanceUrl }
+                { "aud", powerSyncInstanceUrl },
+                { "iss", _config.JwtIssuer! }
             };
 
             var headers = new Dictionary<string, object>
