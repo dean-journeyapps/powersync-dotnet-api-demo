@@ -36,7 +36,8 @@ namespace PowerSync.Api.Controllers
             using var rsa = RSA.Create(2048);
             _privateKey = rsa.ExportParameters(true);
             _publicKey = rsa.ExportParameters(false);
-            _kid = $"powersync-dev-{Guid.NewGuid():N}";
+            //_kid = $"powersync-dev-{Guid.NewGuid():N}";
+            _kid = "powersync-dev-3223d4e3";
         }
 
         [HttpGet("token")]
