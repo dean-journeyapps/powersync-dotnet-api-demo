@@ -35,40 +35,25 @@ builder.Configuration.AddEnvironmentVariables();
 // Register PersisterFactoryRegistry first
 builder.Services.AddSingleton<PersisterFactoryRegistry>();
 
-var envDatabaseUri = Environment.GetEnvironmentVariable("DATABASE_URI");
-if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+// Map environment variables to configuration
+var environmentMappings = new Dictionary<string, string>
 {
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:DatabaseUri"] = envDatabaseUri;
-}
+    { "DATABASE_URI", $"{PowerSyncConfig.SectionName}:DatabaseUri" },
+    { "DATABASE_TYPE", $"{PowerSyncConfig.SectionName}:DatabaseType" },
+    { "POWERSYNC_PRIVATEKEY", $"{PowerSyncConfig.SectionName}:PrivateKey" },
+    { "POWERSYNC_PUBLICKEY", $"{PowerSyncConfig.SectionName}:PublicKey" },
+    { "JWT_ISSUER", $"{PowerSyncConfig.SectionName}:JwtIssuer" },
+    { "POWERSYNC_URL", $"{PowerSyncConfig.SectionName}:PowerSyncUrl" }
+};
 
-var envDatabaseType = Environment.GetEnvironmentVariable("DATABASE_TYPE");
-if (!string.IsNullOrWhiteSpace(envDatabaseUri))
+// Apply each environment variable if it exists
+foreach (var mapping in environmentMappings)
 {
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:DatabaseType"] = envDatabaseType;
-}
-
-var envPrivateKey = Environment.GetEnvironmentVariable("POWERSYNC_PRIVATEKEY");
-if (!string.IsNullOrWhiteSpace(envDatabaseUri))
-{
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:PrivateKey"] = envPrivateKey;
-}
-
-var envPublicKey = Environment.GetEnvironmentVariable("POWERSYNC_PUBLICKEY");
-if (!string.IsNullOrWhiteSpace(envDatabaseUri))
-{
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:PublicKey"] = envPublicKey;
-}
-
-var envJWTIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-if (!string.IsNullOrWhiteSpace(envDatabaseUri))
-{
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:JwtIssuer"] = envJWTIssuer;
-}
-
-var envUrl = Environment.GetEnvironmentVariable("POWERSYNC_URL");
-if (!string.IsNullOrWhiteSpace(envDatabaseUri))
-{
-    builder.Configuration[$"{PowerSyncConfig.SectionName}:PowerSyncUrl"] = envUrl;
+    var envValue = Environment.GetEnvironmentVariable(mapping.Key);
+    if (!string.IsNullOrWhiteSpace(envValue))
+    {
+        builder.Configuration[mapping.Value] = envValue;
+    }
 }
 
 // Configure PowerSync settings
