@@ -59,7 +59,7 @@ namespace PowerSync.Api.Controllers
             {
                 { "sub", user_id },
                 { "iat", now.ToUnixTimeSeconds() },
-                { "exp", now.AddMinutes(5).ToUnixTimeSeconds() }, 
+                { "exp", now.AddHours(12).ToUnixTimeSeconds() }, 
                 { "aud", powerSyncInstanceUrl },
                 { "iss", _config.JwtIssuer! }
             };
@@ -73,8 +73,6 @@ namespace PowerSync.Api.Controllers
             string token = JWT.Encode(payload, rsa, JwsAlgorithm.RS256, headers);
 
             _logger.LogInformation($"Audience value: {powerSyncInstanceUrl}");
-
-            token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InBvd2Vyc3luYy1kZXYtMzIyM2Q0ZTMifQ.eyJzdWIiOiI4MWFmYjQyZC02YjA1LTQ0NTAtODA0OC04NDc0MTQ3OGE2M2IiLCJpYXQiOjE3NDMyMzA2OTksImlzcyI6Imh0dHBzOi8vcG93ZXJzeW5jLWFwaS5qb3VybmV5YXBwcy5jb20iLCJhdWQiOiJodHRwczovLzY3ZTJiZGJlYWIyYzUwOTBjOWM4MjY5Yy5wb3dlcnN5bmMuam91cm5leWFwcHMuY29tIiwiZXhwIjoxNzQzMjczODk5fQ.BY1dFZFd_1CcEFOew98TjjjRqji8QmtvnC1PoWcoQJ4ZF87SPv44mbKP06mtpDNQ8Nu9FZEi-SE2QhGWLNIUn7pc3YzW0O6yd1tfZE4ooKI3LP9mgcZCCnKgPJLMJ2mb5anUefaLE8VIBu-l0KwQ9KFyzCXgrZk1StdjXVH7V982YJ8-dvz-jaFETuHHpocz2FnFLfuntg4Xx50TFzypqm9s-Clm6kl3wf7tPkT11buB8fQGav6Uh-rDMe5Dg42sW3hLDZegvuuTSzvRQEHkkJywr1WIm8I1N9ct6UuIa3oAlZAYRQ5XxqLbjN8_51YCKK2j0idWDv0qhiZn5x6WOQ";
 
             return Ok(new { token, powersync_url = powerSyncInstanceUrl });
         }
