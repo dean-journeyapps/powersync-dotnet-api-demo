@@ -13,7 +13,59 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
         public PostgresPersister(string uri)
         {
             Console.WriteLine("Using Postgres Persister");
-            _dataSource = NpgsqlDataSource.Create(uri);
+
+            try
+            {
+                // Check if the string is a URI format
+                if (uri.StartsWith("postgres://") || uri.StartsWith("postgresql://"))
+                {
+                    // Manually parse the URI and build a connection string
+                    var connString = ConvertUriToConnectionString(uri);
+                    _dataSource = NpgsqlDataSource.Create(connString);
+                }
+                else
+                {
+                    // Assume it's already in the correct format
+                    _dataSource = NpgsqlDataSource.Create(uri);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Connection string error: {ex.Message}");
+                throw;
+            }
+        }
+
+        private string ConvertUriToConnectionString(string uri)
+        {
+            try
+            {
+                Uri pgUri = new Uri(uri);
+
+                // Extract components
+                string server = pgUri.Host;
+                int port = pgUri.Port > 0 ? pgUri.Port : 5432; // Default to 5432 if not specified
+                string database = pgUri.AbsolutePath.TrimStart('/');
+
+                // Parse userinfo (username:password)
+                string username = string.Empty;
+                string password = string.Empty;
+
+                if (!string.IsNullOrEmpty(pgUri.UserInfo))
+                {
+                    string[] userInfoParts = pgUri.UserInfo.Split(':');
+                    username = userInfoParts[0];
+                    password = userInfoParts.Length > 1 ? userInfoParts[1] : string.Empty;
+                }
+
+                // Build connection string
+                return $"Host={server};Port={port};Database={database};Username={username};Password={password};";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to parse URI: {ex.Message}");
+                throw new ArgumentException($"Invalid PostgreSQL URI format: {uri}", ex);
+            }
         }
 
         public async Task UpdateBatchAsync(List<BatchOperation> batch)

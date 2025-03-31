@@ -146,7 +146,7 @@ if (app.Environment.IsDevelopment())
             var exceptionHandlerPathFeature = 
                 context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
             
-            var exception = exceptionHandlerPathFeature.Error;
+            var exception = exceptionHandlerPathFeature!.Error;
             
             var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogError(exception, "Unhandled exception");
