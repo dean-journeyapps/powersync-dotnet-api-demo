@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Jose;
 using PowerSync.Infrastructure.Configuration;
+using PowerSync.Infrastructure.Utils;
 
 namespace PowerSync.Api.Controllers
 {
@@ -15,8 +13,8 @@ namespace PowerSync.Api.Controllers
     {
         private readonly PowerSyncConfig _config;
         private readonly ILogger<AuthController> _logger;
-        private static RSAParameters? _privateKey;
-        private static RSAParameters? _publicKey;
+        private static string? _privateKey;
+        private static string? _publicKey;
         private static string? _kid;
 
         public AuthController(
@@ -28,16 +26,12 @@ namespace PowerSync.Api.Controllers
             EnsureKeys();
         }
 
-        private void EnsureKeys()
+        private static void EnsureKeys()
         {
-            if (_privateKey.HasValue && _publicKey.HasValue && _kid != null)
+            if (!string.IsNullOrEmpty(_privateKey) && !string.IsNullOrEmpty(_publicKey) && _kid != null)
                 return;
 
-            using var rsa = RSA.Create(2048);
-            _privateKey = rsa.ExportParameters(true);
-            _publicKey = rsa.ExportParameters(false);
-            //_kid = $"powersync-dev-{Guid.NewGuid():N}";
-            _kid = "powersync-dev-3223d4e3";
+            (_privateKey, _publicKey, _kid) = KeyPairGenerator.GenerateKeyPair();
         }
 
         [HttpGet("token")]
@@ -46,11 +40,11 @@ namespace PowerSync.Api.Controllers
             if (string.IsNullOrEmpty(user_id))
                 return BadRequest("User ID is required");
 
-            if (!_privateKey.HasValue || _kid == null)
+            if (string.IsNullOrEmpty(_privateKey) || _kid == null)
                 return BadRequest("Unable to generate token");
 
             using var rsa = RSA.Create();
-            rsa.ImportParameters(_privateKey.Value);
+            rsa.ImportFromPem(_privateKey);
 
             string powerSyncInstanceUrl = _config.PowerSyncUrl?.TrimEnd('/') ?? throw new InvalidOperationException("PowerSync URL must be configured");
 
@@ -80,25 +74,18 @@ namespace PowerSync.Api.Controllers
         [HttpGet("keys")]
         public IActionResult GetKeys()
         {
-            if (!_publicKey.HasValue)
+            if (string.IsNullOrEmpty(_publicKey))
                 return BadRequest("No public keys available");
 
-            var rsaParams = _publicKey.Value;
             var jwk = new
             {
                 kty = "RSA",
                 alg = "RS256",
                 kid = _kid,
-                n = Base64UrlEncode(rsaParams.Modulus!),
-                e = Base64UrlEncode(rsaParams.Exponent!)
+                n = _publicKey
             };
 
             return Ok(new { keys = new[] { jwk } });
         }
-
-        private string Base64UrlEncode(byte[] input) => Convert.ToBase64String(input)
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
     }
 }
