@@ -40,7 +40,7 @@ DATABASE_TYPE=<postgresql|mongodb|mysql>
 POWERSYNC_PRIVATE_KEY=<your_private_key>
 POWERSYNC_PUBLIC_KEY=<your_public_key>
 POWERSYNC_URL=<your_powersync_url>
-PORT=3000
+PORT=5000
 JWT_ISSUER=<your_jwt_issuer>
 ```
 
