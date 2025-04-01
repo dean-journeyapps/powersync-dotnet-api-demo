@@ -5,6 +5,9 @@ using Npgsql;
 using PowerSync.Domain.Interfaces;
 using PowerSync.Infrastructure.Configuration;
 using PowerSync.Infrastructure.Persistence;
+using DotNetEnv;
+
+Env.Load(); // This loads from a .env file in the project root
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -214,7 +217,7 @@ app.MapControllers();
 // Global exception handling
 try
 {
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "6060";
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
     app.Run($"http://0.0.0.0:{port}");
 }
 catch (Exception ex)
