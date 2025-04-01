@@ -4,6 +4,10 @@ using PowerSync.Domain.Records;
 
 namespace PowerSync.Api.Controllers
 {
+    /// <summary>
+    /// Controller responsible for handling data synchronization operations such as batch updates,
+    /// individual record operations (PUT, PATCH, DELETE), and checkpoint creation.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class DataController(
@@ -13,6 +17,14 @@ namespace PowerSync.Api.Controllers
         private readonly IPersister _persister = persister;
         private readonly ILogger<DataController> _logger = logger;
 
+        /// <summary>
+        /// Processes a batch request containing multiple data operations.
+        /// </summary>
+        /// <param name="request">The batch request containing operations to be processed</param>
+        /// <returns>
+        /// 200 OK if batch completed successfully
+        /// 400 Bad Request if request is invalid or processing fails
+        /// </returns>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] BatchRequest request)
         {
@@ -33,6 +45,14 @@ namespace PowerSync.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Creates or replaces a record in the specified table.
+        /// </summary>
+        /// <param name="batchOperation">Operation details including table name, data, and optional ID</param>
+        /// <returns>
+        /// 200 OK if PUT operation completed successfully
+        /// 400 Bad Request if request is invalid or processing fails
+        /// </returns>
         [HttpPut]
         public async Task<IActionResult> Put([FromBody] BatchOperation batchOperation)
         {
@@ -43,6 +63,7 @@ namespace PowerSync.Api.Controllers
 
             try
             {
+                // Force operation type to PUT regardless of what was provided
                 batchOperation.Op = PowerSync.Domain.Enums.OperationType.PUT;
                 await _persister.UpdateBatchAsync([batchOperation]);
                 return Ok(new { message = $"PUT completed for {batchOperation.Table} {batchOperation.Data["id"]}" });
@@ -54,6 +75,15 @@ namespace PowerSync.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Creates a synchronization checkpoint for a specific user and client combination.
+        /// Checkpoints are used to track data synchronization state.
+        /// </summary>
+        /// <param name="request">Request containing optional userId and clientId</param>
+        /// <returns>
+        /// 200 OK with the created checkpoint details
+        /// 400 Bad Request if request is null
+        /// </returns>
         [HttpPut("checkpoint")]
         public async Task<IActionResult> CreateCheckpoint([FromBody] CheckpointRequest request)
         {
@@ -62,6 +92,7 @@ namespace PowerSync.Api.Controllers
                 return BadRequest(new { message = "Invalid body provided" });
             }
 
+            // Use provided values or defaults if not specified
             var userId = request.UserId ?? "UserID";
             var clientId = request.ClientId ?? "1";
 
@@ -69,6 +100,14 @@ namespace PowerSync.Api.Controllers
             return Ok(new { checkpoint });
         }
 
+        /// <summary>
+        /// Partially updates an existing record in the specified table.
+        /// </summary>
+        /// <param name="batchOperation">Operation details including table name and data to update</param>
+        /// <returns>
+        /// 200 OK if PATCH operation completed successfully
+        /// 400 Bad Request if request is invalid or processing fails
+        /// </returns>
         [HttpPatch]
         public async Task<IActionResult> Patch([FromBody] BatchOperation batchOperation)
         {
@@ -79,6 +118,7 @@ namespace PowerSync.Api.Controllers
 
             try
             {
+                // Force operation type to PATCH regardless of what was provided
                 batchOperation.Op = PowerSync.Domain.Enums.OperationType.PATCH;
                 await _persister.UpdateBatchAsync([batchOperation]);
                 return Ok(new { message = $"PATCH completed for {batchOperation.Table}" });
@@ -90,6 +130,14 @@ namespace PowerSync.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Deletes a record from the specified table using its ID.
+        /// </summary>
+        /// <param name="batchOperation">Operation details including table name and ID of record to delete</param>
+        /// <returns>
+        /// 200 OK if DELETE operation completed successfully
+        /// 400 Bad Request if request is invalid or processing fails
+        /// </returns>
         [HttpDelete]
         public async Task<IActionResult> Delete([FromBody] BatchOperation batchOperation)
         {
@@ -100,6 +148,7 @@ namespace PowerSync.Api.Controllers
 
             try
             {
+                // Force operation type to DELETE regardless of what was provided
                 batchOperation.Op = PowerSync.Domain.Enums.OperationType.DELETE;
                 await _persister.UpdateBatchAsync([batchOperation]);
                 return Ok(new { message = $"DELETE completed for {batchOperation.Table} {batchOperation.Id}" });

@@ -6,10 +6,19 @@ using PowerSync.Domain.Records;
 
 namespace PowerSync.Infrastructure.Persistence.Postgres
 {
+    /// <summary>
+    /// Postgres implementation of the IPersister interface that handles data persistence
+    /// operations for the PowerSync system using a PostgreSQL database.
+    /// </summary>
     public class PostgresPersister : IPersister
     {
         private readonly NpgsqlDataSource _dataSource;
 
+        /// <summary>
+        /// Initializes a new instance of the PostgresPersister with a connection string or URI.
+        /// </summary>
+        /// <param name="uri">PostgreSQL connection string or URI (postgres://user:pass@host:port/database)</param>
+        /// <exception cref="ArgumentException">Thrown when the URI format is invalid</exception>
         public PostgresPersister(string uri)
         {
             Console.WriteLine("Using Postgres Persister");
@@ -36,6 +45,12 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             }
         }
 
+        /// <summary>
+        /// Converts a PostgreSQL URI (postgres://user:pass@host:port/database) to a standard connection string.
+        /// </summary>
+        /// <param name="uri">PostgreSQL URI to convert</param>
+        /// <returns>A standard PostgreSQL connection string</returns>
+        /// <exception cref="ArgumentException">Thrown when the URI cannot be parsed</exception>
         private static string ConvertUriToConnectionString(string uri)
         {
             try
@@ -68,6 +83,14 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             }
         }
 
+        /// <summary>
+        /// Updates the database with a batch of operations (PUT, PATCH, DELETE).
+        /// All operations in the batch are executed within a single transaction.
+        /// </summary>
+        /// <param name="batch">List of operations to perform</param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when an unknown operation type is encountered</exception>
+        /// <exception cref="ArgumentException">Thrown when operation parameters are invalid</exception>
         public async Task UpdateBatchAsync(List<BatchOperation> batch)
         {
             await using var connection = await _dataSource.OpenConnectionAsync();
@@ -102,6 +125,14 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             }
         }
 
+        /// <summary>
+        /// Handles a PUT operation by inserting a new record or updating an existing one.
+        /// Uses PostgreSQL's UPSERT functionality (INSERT ... ON CONFLICT DO UPDATE).
+        /// </summary>
+        /// <param name="connection">The database connection</param>
+        /// <param name="op">The operation details including table, ID, and data</param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        /// <exception cref="ArgumentException">Thrown when required parameters are missing</exception>
         private static async Task HandlePutOperation(NpgsqlConnection connection, BatchOperation op)
         {
             if (string.IsNullOrWhiteSpace(op.Table) || string.IsNullOrWhiteSpace(op.Id))
@@ -110,12 +141,16 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             if (op.Data is null || op.Data.Count == 0)
                 throw new ArgumentException("Data is required for PUT operation");
 
+            // Ensure 'id' is included in the data dictionary
             var dataDict = new Dictionary<string, object>(op.Data)
             {
                 ["id"] = op.Id
             };
 
             var jsonData = JsonSerializer.Serialize(dataDict);
+            
+            // Use json_populate_record to convert JSON to a record of the target table type
+            // Then perform an UPSERT (INSERT with ON CONFLICT DO UPDATE)
             var sql = $@"
                 WITH data_row AS (
                     SELECT (json_populate_record(null::{op.Table}, @data::json)).*
@@ -128,6 +163,14 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             await cmd.ExecuteNonQueryAsync();
         }
 
+        /// <summary>
+        /// Handles a PATCH operation by updating specified fields of an existing record.
+        /// Only updates the columns provided in the data dictionary.
+        /// </summary>
+        /// <param name="connection">The database connection</param>
+        /// <param name="op">The operation details including table, ID, and data to update</param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        /// <exception cref="ArgumentException">Thrown when required parameters are missing</exception>
         private static async Task HandlePatchOperation(NpgsqlConnection connection, BatchOperation op)
         {
             if (string.IsNullOrWhiteSpace(op.Id))
@@ -157,6 +200,7 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
                 dataWithId["id"] = op.Id;
             }
 
+            // Update only specified columns using a CTE with json_populate_record
             var statement = $@"
                 WITH data_row AS (
                     SELECT (json_populate_record(null::{op.Table}, @data::json)).*
@@ -172,11 +216,19 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             await cmd.ExecuteNonQueryAsync();
         }
 
+        /// <summary>
+        /// Handles a DELETE operation by removing a record with the specified ID.
+        /// </summary>
+        /// <param name="connection">The database connection</param>
+        /// <param name="op">The operation details including table and ID to delete</param>
+        /// <returns>Task representing the asynchronous operation</returns>
+        /// <exception cref="ArgumentException">Thrown when required parameters are missing</exception>
         private static async Task HandleDeleteOperation(NpgsqlConnection connection, BatchOperation op)
         {
             if (string.IsNullOrWhiteSpace(op.Id))
                 throw new ArgumentException("Id is required for DELETE operation");
 
+            // Delete using a CTE with json_populate_record for consistency with other operations
             var sql = $@"
                 WITH data_row AS (
                     SELECT (json_populate_record(null::{op.Table}, @data::json)).*
@@ -190,9 +242,18 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             await cmd.ExecuteNonQueryAsync();
         }
 
+        /// <summary>
+        /// Creates a checkpoint for a user and client combination.
+        /// If a checkpoint already exists, it increments the existing checkpoint value.
+        /// </summary>
+        /// <param name="userId">User identifier</param>
+        /// <param name="clientId">Client identifier</param>
+        /// <returns>The new checkpoint value</returns>
         public async Task<long> CreateCheckpointAsync(string userId, string clientId)
         {
             await using var connection = await _dataSource.OpenConnectionAsync();
+            
+            // Insert new checkpoint or increment existing one using ON CONFLICT
             await using var cmd = new NpgsqlCommand(@"
             INSERT INTO checkpoints(user_id, client_id, checkpoint)
             VALUES (@userId, @clientId, '1')
