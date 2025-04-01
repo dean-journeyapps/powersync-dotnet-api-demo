@@ -1,3 +1,4 @@
+using System;
 using System.Security.Cryptography;
 
 namespace PowerSync.Infrastructure.Utils
@@ -8,8 +9,8 @@ namespace PowerSync.Infrastructure.Utils
         {
             using var rsa = RSA.Create(2048);
 
-            // Generate a random key identifier
-            var kid = $"powersync-{GenerateRandomHex(5)}";
+            // Generate a key identifier that matches the format used in the original code
+            var kid = $"powersync-dev-{GenerateRandomHex(4)}";
 
             string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
             string publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
