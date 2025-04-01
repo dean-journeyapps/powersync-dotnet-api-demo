@@ -21,6 +21,9 @@ This repository contains a demo .NET 9 backend API that provides authentication 
 5. **DELETE `/api/data`**
    - PowerSync uses this endpoint to sync delete events from the client application.
 
+6. **POST `/api/data`**
+- PowerSync uses this endpoint to sync upsert batched events from the client application.
+
 ## Requirements
 
 - [.NET 9 SDK](https://dotnet.microsoft.com/)
@@ -46,7 +49,7 @@ JWT_ISSUER=<your_jwt_issuer>
 ### 1. Clone the repository
 ```sh
 git clone https://github.com/dean-journeyapps/powersync-dotnet-api-demo.git
-cd powersync-dotnet-backend
+cd powersync-dotnet-api-demo
 ```
 
 ### 2. Build and Run with Docker
@@ -85,21 +88,6 @@ You can test if the API is running by opening:
 http://127.0.0.1:5000/api/auth/token
 ```
 You should receive a JSON response with an access token.
-
-## Connecting the App with PowerSync
-
-1. Download and install [ngrok](https://ngrok.com/)
-2. Run the ngrok command to create an HTTPS tunnel:
-   ```sh
-   ngrok http 5000
-   ```
-3. Copy the HTTPS forwarding URL from ngrok and paste it into the [PowerSync Dashboard](https://powersync.journeyapps.com/) under the Credentials tab, using the following format:
-   ```
-   JWKS URI
-   https://your_id.ngrok-free.app/api/auth/keys/
-   ```
-
-Ensure the URL includes the `/api/auth/keys/` path, as PowerSync uses this to validate tokens.
 
 ## Contributing
 
