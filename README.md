@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains a demo .NET 9 backend API that provides authentication and data synchronization endpoints for a [PowerSync](https://www.powersync.com/) enabled application. It allows client devices to sync data with a PostgreSQL or MongoDB database.
+This repository contains a demo .NET 9 backend API that provides authentication and data synchronization endpoints for a [PowerSync](https://www.powersync.com/) enabled application. It allows client devices to sync data with a PostgreSQL database.
 
 ### Endpoints
 
@@ -26,7 +26,7 @@ This repository contains a demo .NET 9 backend API that provides authentication 
 
 ## Requirements
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/)
+- [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 - PostgreSQL, MongoDB, or MySQL database
 - PowerSync credentials
 
@@ -53,6 +53,11 @@ cd powersync-dotnet-api-demo
 ```
 
 ### 2. Build and Run with Docker
+
+1. **Create a new `.env` file in the root project directory and add the variables as defined in the `.env` file**
+    ```sh
+    cp .env.template .env
+    ```
 
 1. **Build the Docker image:**
    ```sh
