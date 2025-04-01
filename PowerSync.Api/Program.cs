@@ -215,11 +215,9 @@ app.MapControllers();
 try
 {
     var port = Environment.GetEnvironmentVariable("PORT") ?? "6060";
-    //var port = "5227"; 
     app.Run($"http://0.0.0.0:{port}");
 }
 catch (Exception ex)
 {
-    // Use proper logging instead of Console.WriteLine
     Console.WriteLine($"Critical error: {ex}");
 }
