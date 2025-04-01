@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using PowerSync.Domain.Interfaces;
@@ -215,7 +214,7 @@ app.MapControllers();
 // Global exception handling
 try
 {
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "6060";
     //var port = "5227"; 
     app.Run($"http://0.0.0.0:{port}");
 }

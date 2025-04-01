@@ -36,11 +36,11 @@ namespace PowerSync.Infrastructure.Persistence.Postgres
             }
         }
 
-        private string ConvertUriToConnectionString(string uri)
+        private static string ConvertUriToConnectionString(string uri)
         {
             try
             {
-                Uri pgUri = new Uri(uri);
+                Uri pgUri = new(uri);
 
                 // Extract components
                 string server = pgUri.Host;
