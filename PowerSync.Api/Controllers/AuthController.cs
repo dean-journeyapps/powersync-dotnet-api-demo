@@ -1,12 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Jose;
 using PowerSync.Infrastructure.Configuration;
 using PowerSync.Infrastructure.Utils;
+using PowerSync.Domain.Records;
 
 namespace PowerSync.Api.Controllers
 {
@@ -29,7 +27,7 @@ namespace PowerSync.Api.Controllers
             EnsureKeys();
         }
 
-        private void EnsureKeys()
+        private static void EnsureKeys()
         {
             if (_rsaPrivate != null && _rsaPublic != null && _kid != null)
                 return;
@@ -76,7 +74,7 @@ namespace PowerSync.Api.Controllers
 
             _logger.LogInformation($"Audience value: {powerSyncInstanceUrl}");
 
-            return Ok(new { token, powersync_url = powerSyncInstanceUrl });
+             return Ok(new TokenResponse { Token = token, PowersyncUrl = powerSyncInstanceUrl });
         }
 
         [HttpGet("keys")]

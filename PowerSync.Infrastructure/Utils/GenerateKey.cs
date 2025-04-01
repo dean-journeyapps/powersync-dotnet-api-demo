@@ -1,4 +1,3 @@
-using System;
 using System.Security.Cryptography;
 
 namespace PowerSync.Infrastructure.Utils
