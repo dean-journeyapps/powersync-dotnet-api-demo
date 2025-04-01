@@ -7,7 +7,7 @@ using PowerSync.Infrastructure.Configuration;
 using PowerSync.Infrastructure.Persistence;
 using DotNetEnv;
 
-Env.Load(); // This loads from a .env file in the project root
+Env.Load("../.env"); // This loads from a .env file in the project root
 
 var builder = WebApplication.CreateBuilder(args);
 
